@@ -6,12 +6,50 @@ st.write(
 )
 
 
+import yfinance as yf
 import pandas as pd
-df = pd.DataFrame({
-  'first column': [1, 2, 3, 4],
-  'second column': [10, 20, 30, 40]
-})
+from datetime import datetime, timedelta
 
-# streamlit assumes the df should be writen to screen so allows you to skip
-# the write command - magic
-df
+# Set the time period
+end_date = datetime.today()
+start_date = end_date - timedelta(days=90)
+
+# Tickers and labels for key financial indicators
+tickers = {
+    'INDA (India)': 'INDA',
+    'VNM (Vietnam)': 'VNM',
+    'EWW (Mexico)': 'EWW',
+    'VGK (Europe)': 'VGK',
+    'IWM (US Small Cap)': 'IWM',
+    'XLI (US Industrials)': 'XLI',
+    'SMH (Semiconductors)': 'SMH',
+    'KBE (US Banks)': 'KBE',
+    'EUFN (Europe Banks)': 'EUFN',
+    'CPER (Copper)': 'CPER',
+    'USO (Oil)': 'USO',
+    'DXY (USD Index)': 'DX-Y.NYB',
+    'VIX (Volatility Index)': '^VIX'
+}
+
+st.title("Trade Recovery Market Dashboard (Ex-China)")
+st.markdown("""
+Track financial indicators likely to benefit from easing global trade tensions (excluding China).
+""")
+
+selected_tickers = st.multiselect("Select indicators to display:", options=list(tickers.keys()), default=list(tickers.keys())[:5])
+
+@st.cache_data
+def fetch_data(ticker):
+    df = yf.download(ticker, start=start_date, end=end_date)
+    df['Return %'] = (df['Close'] / df['Close'].iloc[0] - 1) * 100
+    return df[['Close', 'Return %']]
+
+# Display the selected charts
+for label in selected_tickers:
+    ticker = tickers[label]
+    data = fetch_data(ticker)
+    st.subheader(label)
+    st.line_chart(data['Return %'], use_container_width=True)
+
+st.markdown("---")
+st.markdown("Data from Yahoo Finance. Returns are shown relative to the past 90 days.")
